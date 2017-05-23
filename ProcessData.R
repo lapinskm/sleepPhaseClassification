@@ -152,3 +152,42 @@ library(randomForest)
 forest <- randomForest(xlearn, ylearn, xtest, ytest, ntree = 600, keep.forest = TRUE)
 forest
 
+
+#try neuralnet model
+library(neuralnet)
+library(nnet)#for class.ind only
+
+#neural network needs other format of data so we have to prepare and split once againg
+neuralModelData   <- modelData
+neuralModelData$t <- NULL #time is not used in this case
+
+classInds  <- class.ind(neuralModelData$phase)
+classNames <- paste0("P_",colnames(classInds))
+colnames(classInds) <- paste0("P_",colnames(classInds))
+neuralModelData$phase=NULL
+
+xlearn <- neuralModelData[-testIdx,]
+ylearn <- classInds[-testIdx,]
+xtest <- neuralModelData[ testIdx,]
+ytest <- classInds[ testIdx,]
+
+neuralModelData <- cbind(neuralModelData, classInds)
+
+#create formula
+lf <- paste(colnames(ylearn), collapse='+')
+rf <- paste(colnames(xlearn), collapse='+')
+f <- as.formula(paste(lf,'~',rf))
+
+#teach model
+neuralModel <- neuralnet(f, neuralModelData, linear.output=FALSE, hidden = c(40), threshold = 0.05, lifesign="full",lifesign.step=100)
+
+#compare results
+ylearn_pred <- neuralnet::compute(neuralModel, xlearn )$net.result
+ylearn_pred <- apply(ylearn_pred, FUN=which.max, MARGIN = 1)
+ylearn      <- apply(ylearn, FUN=which.max, MARGIN = 1)
+1-sum(rep(1,length(ylearn_pred)) [ylearn_pred == ylearn])/length(ylearn_pred)
+
+ytest_pred <- neuralnet::compute(neuralModel, xtest )$net.result
+ytest_pred <- apply(ytest_pred, FUN=which.max, MARGIN = 1)
+ytest      <- apply(ytest, FUN=which.max, MARGIN = 1)
+1-sum(rep(1,length(ytest_pred)) [ytest_pred == ytest])/length(ytest_pred)
