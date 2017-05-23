@@ -109,5 +109,46 @@ head(modelData)
 tail(modelData)
 
 # preprocessing is finished. Now we can try build some models.
-#TODO: add classification models
+
+dataSize=nrow(modelData)
+
+
+x <- modelData
+x$phase <-NULL
+
+
+#normalize <- function(x) { return ((x - mean(x)) / sqrt(sum(x^2)) )}
+#x.norm=apply(x,2, normalize)
+#x = x.norm
+
+y <- modelData$phase
+
+
+#Split data to learning and test sets
+testIdx  <- sample(dataSize, dataSize * 0.1)
+
+xlearn <- x[-testIdx,]
+xtest  <- x[ testIdx,]
+
+ylearn <- y[-testIdx]
+ytest  <- y[ testIdx]
+
+#Some models needs to be feed by matrix
+xlearn_matrix <- data.matrix(xlearn)
+xtest_matrix  <- data.matrix(xtest )
+
+# try SVM model
+library("e1071")
+svm_model  <- svm(x=xlearn_matrix, y=ylearn)
+svm_model
+ytest_pred  <- predict(svm_model, xtest_matrix)
+ylearn_pred <- predict(svm_model, xlearn_matrix)
+# compare result of prediction for learn and test data
+1-sum(rep(1,length(ylearn_pred)) [ylearn_pred == ylearn])/length(ylearn_pred)
+1-sum(rep(1,length(ytest_pred)) [ytest_pred == ytest] )/length(ytest_pred)
+
+#try random forest
+library(randomForest)
+forest <- randomForest(xlearn, ylearn, xtest, ytest, ntree = 600, keep.forest = TRUE)
+forest
 
