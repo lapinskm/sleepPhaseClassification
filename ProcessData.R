@@ -96,8 +96,18 @@ remove(hypnogram, phase, i, j, firstRecordOfNextPhase)
 
 modelData[["phase"]] = as.factor(modelData[["phase"]])
 
-head(modelData)
-tail(modelData)
+img=modelData
+img$t=NULL
+img$phase=NULL
+head(img)
+image(data.matrix(img), col=rainbow(20))
+
+plot(x=modelData[["t"]],y=modelData[["phase"]],type="l")
+
+hypnogram_matrix   = data.matrix(as.numeric(modelData[["phase"]]))
+hypnogram_timeline = data.matrix(as.numeric(modelData[["t"]]))
+
+image (hypnogram_matrix,   col = rainbow(10),)
 
 # preprocessing is finished. Now we can try build some models.
 
