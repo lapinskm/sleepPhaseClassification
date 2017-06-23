@@ -3,7 +3,9 @@ library(graphics)
 library(signal)
 
 #TODO: remove hard-codes
-setwd("Source/SleepPhaseClassification")
+setwd("~/Source/sleepPhaseClassification")
+source("utils.R")
+
 fileName <- "SC4001E0-PSG.edf"
 
 #Load edf files
@@ -55,21 +57,10 @@ ncol(signalSpectral)
 rangeBordersFrequencies <- c( 0.3, 4, 6, 8, 10.5, 12.5, 14, 17, 20, upperCutoffFrequency)
 
 #rangeBordersFrequencies <- c( 0.3, 2, 3, 4, 5, 6, 7, 8, 9, 10.5,10, 11.5,12, 12.5, 13, 14,15.5, 17, 20, upperCutoffFrequency)
-remove(upperCutoffFrequency)
 
-modelData <- data.frame(t=as.numeric(colnames(signalSpectral)))
+modelData <- cutDataIntoFreqRanges (signalSpectral ,rangeBordersFrequencies)
 
-#split data to ranges
-beginOfRange <- 0
-for(endOfRange in rangeBordersFrequencies) {
-  rangeName=paste0("r",beginOfRange , "_" , endOfRange, "hz")
-
-  featureCollum <- colSums(signalSpectral[as.numeric(rownames(signalSpectral))>beginOfRange &
-                                          as.numeric(rownames(signalSpectral))<=endOfRange, ])
-  modelData[[rangeName]] <- featureCollum
-  beginOfRange <- endOfRange
-}
-remove(signalSpectral, beginOfRange, endOfRange, featureCollum, rangeName, rangeBordersFrequencies)
+remove(signalSpectral, rangeBordersFrequencies, upperCutoffFrequency)
 
 #load hypnogram - modelled class
 #TODO: remove hard-codes
