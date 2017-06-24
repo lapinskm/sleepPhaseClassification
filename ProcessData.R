@@ -34,25 +34,15 @@ remove(signalValue, overlap, windowSize, window)
 
 #Get raw data from spectrogram
 signalSpectral <- abs(spectrogram$S)
-ncol(signalSpectral)
-nrow(signalSpectral)
 
 colnames(signalSpectral) <- spectrogram$t
 rownames(signalSpectral) <- spectrogram$f
-length(spectrogram$t)
-length(spectrogram$f)
 
 remove(spectrogram)
 
 #remove data values over 25 Hz - These values are meaningless for our needs - deleting them saves more memory
 upperCutoffFrequency <- 25
 signalSpectral <- signalSpectral[as.numeric(rownames(signalSpectral)) < upperCutoffFrequency ,]
-
-
-nrow(signalSpectral)
-ncol(signalSpectral)
-
-#empiricaly selected aggregation range borders. Sums of these ranges are our features.
 
 rangeBordersFrequencies <- c( 0.3, 4, 6, 8, 10.5, 12.5, 14, 17, 20, upperCutoffFrequency)
 
@@ -64,37 +54,13 @@ remove(signalSpectral, rangeBordersFrequencies, upperCutoffFrequency)
 
 #load hypnogram - modelled class
 #TODO: remove hard-codes
-hypnogram <- read.csv("SC4001E0-PSG.edf.csv",header = TRUE, stringsAsFactors = FALSE)
-hypnogram[["beginTime"]]=0
-hypnogram[["endTime"]]=0
 
-#Calculate time of phase's begin and end
-for (i in 2:nrow(hypnogram)) {
-  hypnogram[["endTime"]][i-1]=hypnogram[["beginTime"]][i-1]+hypnogram[["duration"]][i-1]
-  hypnogram[["beginTime"]][i]=hypnogram[["endTime"]][i-1]
-}
-hypnogram[["endTime"]][i]=hypnogram[["beginTime"]][i]+hypnogram[["duration"]][i]
 
-modelData[["phase"]]="e"
+fileName  <- "SC4001EC-Hypnogram.edf"
 
-# assign phase to each data point
-firstRecordOfNextPhase=1
-for (i in 1:nrow(hypnogram)) {
-  phase = hypnogram[i,]
-  for(j in firstRecordOfNextPhase : nrow(modelData)) {
-    if  (modelData[["t"]][j] >= phase[["beginTime"]]  &&
-         modelData[["t"]][j] <= phase[["endTime"]]) {
-        modelData[["phase"]][j] = phase[["Sleep_stage"]]
-    }
-    else {
-      firstRecordOfNextPhase = j
-      break
-    }
-  }
-}
-remove(hypnogram, phase, i, j, firstRecordOfNextPhase)
-
-modelData[["phase"]] = as.factor(modelData[["phase"]])
+hypnogram <- readHypnogtamAndResample(modelData[["t"]], fileName)
+remove (fileName)
+modelData[["phase"]] <- hypnogram
 
 img=modelData
 img$t=NULL
