@@ -1,76 +1,23 @@
-library(edfReader)
 library(graphics)
-library(signal)
 
-#TODO: remove hard-codes
-setwd("~/Source/sleepPhaseClassification")
 source("utils.R")
 
-fileName <- "SC4001E0-PSG.edf"
-
-#Load edf files
-edfHeader <- readEdfHeader (fileName)
-edfData   <- readEdfSignals(edfHeader)
-#this script is memory usage optimized
-remove(edfHeader,fileName)
-
-# We are interested in EEG Fpz-Cz signal only.
-# It should be enough to detect sleep phase.
-signalValue  <-  edfData$`EEG Fpz-Cz`$signal
-signalFreq   <-  edfData$`EEG Fpz-Cz`$sRate
-remove(edfData)
-
-#FFT params
-windowSize <- 30 * signalFreq # [30 s]
-window  <-  hanning(windowSize)
-#overlap <- window_size-1 #imposible due huge memory usage (it would generate fft value for each 1/100s)
-overlap <- windowSize/2 # is default one - means there is value per 15 sec
-fftInterval <- (windowSize-overlap)/signalFreq
-
-#perform FFT analysis of signal
-spectrogram <- specgram(signalValue, Fs = signalFreq, overlap = overlap, window = window)
-remove(signalValue, overlap, windowSize, window)
-#plot(spectrogram)
-
-#Get raw data from spectrogram
-signalSpectral <- abs(spectrogram$S)
-
-colnames(signalSpectral) <- spectrogram$t
-rownames(signalSpectral) <- spectrogram$f
-
-remove(spectrogram)
-
-#remove data values over 25 Hz - These values are meaningless for our needs - deleting them saves more memory
-upperCutoffFrequency <- 25
-signalSpectral <- signalSpectral[as.numeric(rownames(signalSpectral)) < upperCutoffFrequency ,]
-
-rangeBordersFrequencies <- c( 0.3, 4, 6, 8, 10.5, 12.5, 14, 17, 20, upperCutoffFrequency)
-
-#rangeBordersFrequencies <- c( 0.3, 2, 3, 4, 5, 6, 7, 8, 9, 10.5,10, 11.5,12, 12.5, 13, 14,15.5, 17, 20, upperCutoffFrequency)
-
-modelData <- cutDataIntoFreqRanges (signalSpectral ,rangeBordersFrequencies)
-
-remove(signalSpectral, rangeBordersFrequencies, upperCutoffFrequency)
-
-#load hypnogram - modelled class
 #TODO: remove hard-codes
 
+setwd("~/Source/sleepPhaseClassification")
+psgFileName <- "SC4001E0-PSG.edf"
+hypFileName <- "SC4001EC-Hypnogram.edf"
 
-fileName  <- "SC4001EC-Hypnogram.edf"
+modelData  <- readAndPreprocessModelData(psgFileName, hypFileName)
 
-hypnogram <- readHypnogtamAndResample(modelData[["t"]], fileName)
-remove (fileName)
-modelData[["phase"]] <- hypnogram
+img   <- modelData
+img$t   <- NULL
+img$stage <- NULL
+image(z = data.matrix(img), col=rainbow(20))
 
-img=modelData
-img$t=NULL
-img$phase=NULL
-head(img)
-image(data.matrix(img), col=rainbow(20))
+plot(x=modelData[["t"]],y=modelData[["stage"]],type="l")
 
-plot(x=modelData[["t"]],y=modelData[["phase"]],type="l")
-
-hypnogram_matrix   = data.matrix(as.numeric(modelData[["phase"]]))
+hypnogram_matrix   = data.matrix(as.numeric(modelData[["stage"]]))
 hypnogram_timeline = data.matrix(as.numeric(modelData[["t"]]))
 
 image (hypnogram_matrix,   col = rainbow(10),)
@@ -81,14 +28,14 @@ dataSize=nrow(modelData)
 
 
 x <- modelData
-x$phase <-NULL
+x$stage <-NULL
 
 
 #normalize <- function(x) { return ((x - mean(x)) / sqrt(sum(x^2)) )}
 #x.norm=apply(x,2, normalize)
 #x = x.norm
 
-y <- modelData$phase
+y <- modelData$stage
 
 
 #Split data to learning and test sets
@@ -111,14 +58,13 @@ svm_model
 ytest_pred  <- predict(svm_model, xtest_matrix)
 ylearn_pred <- predict(svm_model, xlearn_matrix)
 # compare result of prediction for learn and test data
-1-sum(rep(1,length(ylearn_pred)) [ylearn_pred == ylearn])/length(ylearn_pred)
-1-sum(rep(1,length(ytest_pred)) [ytest_pred == ytest] )/length(ytest_pred)
+1-sum(ylearn_pred == ylearn)/length(ylearn_pred)
+1-sum(ytest_pred == ytest  )/length(ytest_pred)
 
 #try random forest
 library(randomForest)
 forest <- randomForest(xlearn, ylearn, xtest, ytest, ntree = 600, keep.forest = TRUE)
 forest
-
 
 #try neuralnet model
 library(neuralnet)
@@ -128,10 +74,10 @@ library(nnet)#for class.ind only
 neuralModelData   <- modelData
 neuralModelData$t <- NULL #time is not used in this case
 
-classInds  <- class.ind(neuralModelData$phase)
+classInds  <- class.ind(neuralModelData$stage)
 classNames <- paste0("P_",colnames(classInds))
 colnames(classInds) <- paste0("P_",colnames(classInds))
-neuralModelData$phase=NULL
+neuralModelData$stage=NULL
 
 xlearn <- neuralModelData[-testIdx,]
 ylearn <- classInds[-testIdx,]
@@ -146,7 +92,7 @@ rf <- paste(colnames(xlearn), collapse='+')
 f <- as.formula(paste(lf,'~',rf))
 
 #teach model
-neuralModel <- neuralnet(f, neuralModelData, linear.output=FALSE, hidden = c(40), threshold = 0.05, lifesign="full",lifesign.step=100)
+neuralModel <- neuralnet(f, neuralModelData, linear.output=FALSE, hidden = c(50.50), threshold = 0.05, lifesign="full",lifesign.step=100)
 
 #compare results
 ylearn_pred <- neuralnet::compute(neuralModel, xlearn )$net.result

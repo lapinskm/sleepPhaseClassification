@@ -1,11 +1,36 @@
+library(edfReader) # readEdfHeader, readEdfSignals
+library(signal)    # specgram
+library(simecol)   # approxTime
 
 normalize <- function(x) {
   return ((x - mean(x)) / sqrt(sum(x^2)) )
 }
 
-cutDataIntoFreqRanges <- function(data, ranges) {
-  #cutof upper
-  data <- data[as.numeric(rownames(data)) < ranges[length(ranges)] ,]
+prepareSpectrogram <- function(signalValue, windowTime, overlapFactor, signalFreq)
+{
+  #FFT params
+  windowSize <- round(windowTime * signalFreq)
+  window  <-  hanning(windowSize)
+  overlap <- windowSize * overlapFactor
+  fftInterval <- (windowSize-overlap)/signalFreq
+
+  #perform FFT analysis of signal
+  spectrogram <- specgram(signalValue, Fs = signalFreq, overlap = overlap, window = window)
+  remove(signalValue, overlap, windowSize, window)
+  #plot(spectrogram)
+
+  #Get raw data from spectrogram
+  signalSpectral <- abs(spectrogram$S)
+
+  colnames(signalSpectral) <- spectrogram$t
+  rownames(signalSpectral) <- spectrogram$f
+
+  signalSpectral
+}
+
+cutSpectogramIntoFreqRanges <- function(data, rangeBorders) {
+  #cutof over last border
+  data <- data[as.numeric(rownames(data)) < rangeBorders[length(rangeBorders)] ,]
   dim(data)
 
   freqs <- as.numeric(rownames(data)) # frequencies of spectrogram
@@ -15,24 +40,40 @@ cutDataIntoFreqRanges <- function(data, ranges) {
 
   #split data to ranges
   beginOfRange <- 0
-  for(endOfRange in ranges) {
+  for(endOfRange in rangeBorders) {
     rangeName=paste0("r",beginOfRange , "_" , endOfRange, "hz")
 
     featureCollum <- colSums(data[freqs >beginOfRange &
                                     freqs<=endOfRange, ])
+
     result[[rangeName]] <- normalize(featureCollum)
     beginOfRange <- endOfRange
   }
   result
 }
 
-library(simecol)#approxTime
+ReadSignalData <- function(fileName) {
+  #Load edf file
+  edfHeader <- readEdfHeader (fileName)
+  edfData   <- readEdfSignals(edfHeader)
+  #this script is memory usage optimized
+  # We are interested in EEG Fpz-Cz signal only.
+  # It should be enough to detect sleep phase.
+  signalValue  <-  edfData$`EEG Fpz-Cz`$signal
+  signalFreq   <-  edfData$`EEG Fpz-Cz`$sRate
+  remove(edfData)
+  signalSpectral <- prepareSpectrogram(signalValue = signalValue,
+                                       windowTime = 30,
+                                       overlapFactor=1/2,
+                                       signalFreq = signalFreq)
 
-reseampleData <- function(data, timestamps) {
-  result <- approxTime(x = data, xout = timestamps, method = "constant", rule = 2)
+  rangeBordersFrequencies <- c( 0.3, 4, 6, 8, 10.5, 12.5, 14, 17, 20, 25)
+
+  result <- cutSpectogramIntoFreqRanges(data = signalSpectral,
+                                        rangeBorders = rangeBordersFrequencies)
 }
 
-readHypnogtamAndResample <- function(timestamps, fileName) {
+readHypnogtam <- function(fileName) {
 
   edfHeader   <- readEdfHeader (fileName)
   edfData     <- readEdfSignals(edfHeader)
@@ -55,13 +96,24 @@ readHypnogtamAndResample <- function(timestamps, fileName) {
 
   names(result)    <- c("t","stage")
   rownames(result) <- NULL
+  result
+}
 
+reseampleHypnogramData <- function(data, timestamps) {
   # Resampling needs numeric values
-  stage_lvls   <- levels(as.factor(result$stage))
-  result$stage <- as.numeric(as.factor(result$stage))
-
-  result <- reseampleData(result, timestamps )
+  stage_lvls   <- levels(as.factor(data$stage))
+  data$stage <- as.numeric(as.factor(data$stage))
+  #Resample
+  result <- approxTime(x = data, xout = timestamps, method = "constant", rule = 2)
   # Go back to factorial values of stages
   result$stage <- as.factor(result$stage)
   result
+}
+
+readAndPreprocessModelData <- function(psgFileName, hypFileName) {
+  modelData     <- ReadSignalData(psgFileName)
+  hypnogramData <- readHypnogtam(hypFileName)
+  hypnogramData <- reseampleHypnogramData(hypnogramData, modelData$t)
+  modelData[["stage"]] <- hypnogramData$stage
+  modelData
 }
