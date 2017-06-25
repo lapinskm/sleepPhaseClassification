@@ -51,6 +51,9 @@ ytest  <- y[ testIdx]
 xlearn_matrix <- data.matrix(xlearn)
 xtest_matrix  <- data.matrix(xtest )
 
+ylearn_matrix <- data.matrix(ylearn)
+ytest_matrix  <- data.matrix(ytest )
+
 # try SVM model
 library("e1071")
 svm_model  <- svm(x=xlearn_matrix, y=ylearn)
@@ -66,15 +69,42 @@ library(randomForest)
 forest <- randomForest(xlearn, ylearn, xtest, ytest, ntree = 600, keep.forest = TRUE)
 forest
 
+#try RBF model
+library(nnet)      #class.inds
+
+#some models needs boolean class indicators
+classInds   <- class.ind(modelData$stage)
+ylearn_inds <- classInds[-testIdx,]
+ytest_inds  <- classInds[ testIdx,]
+
+#try rbf neural network model
+library(RSNNS)
+
+ylearn_numeric_matrix <- as.numeric(as.factor(ylearn_matrix))
+ytest_numeric_matrix <- as.numeric(as.factor(ytest_matrix))
+
+rbfn.model <- RSNNS::rbf(x=xlearn_matrix,
+                         y=ylearn_inds,
+                         size  =160,   # number of centers, ie, number of neurons in hidden layer
+                         maxit =1000, # max number of iterations to learn
+                         linOut=TRUE) # linear activation function (otherwise logistic)
+
+ylearn_pred <- predict(rbfn.model, xlearn_matrix)
+ylearn_pred <- apply(ylearn_pred, FUN=which.max, MARGIN = 1)
+1-sum(rep(1,length(ylearn_pred)) [ylearn_pred == ylearn])/length(ylearn_pred)
+
+ytest_pred <- predict(rbfn.model, xtest_matrix)
+ytest_pred <- apply(ytest_pred, FUN=which.max, MARGIN = 1)
+1-sum(rep(1,length(ytest_pred)) [ytest_pred == ytest])/length(ytest_pred)
+
+
 #try neuralnet model
-library(neuralnet)
-library(nnet)#for class.ind only
+library(neuralnet) #neuralnet
 
 #neural network needs other format of data so we have to prepare and split once againg
 neuralModelData   <- modelData
 neuralModelData$t <- NULL #time is not used in this case
 
-classInds  <- class.ind(neuralModelData$stage)
 classNames <- paste0("P_",colnames(classInds))
 colnames(classInds) <- paste0("P_",colnames(classInds))
 neuralModelData$stage=NULL
