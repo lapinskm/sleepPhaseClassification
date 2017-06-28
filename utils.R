@@ -2,6 +2,13 @@ library(edfReader) # readEdfHeader, readEdfSignals
 library(signal)    # specgram
 library(simecol)   # approxTime
 
+downloadDataFiles <- function(baseUrl, filenames, downloadLocation) {
+  for (filename in filenames) {
+    download.file(paste0(baseUrl,          filename),
+                  paste0(downloadLocation, filename) );
+  }
+}
+
 normalize <- function(x) {
   return ((x - mean(x)) / sqrt(sum(x^2)) )
 }

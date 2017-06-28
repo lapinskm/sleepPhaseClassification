@@ -5,6 +5,18 @@ source("utils.R")
 #TODO: remove hard-codes
 
 setwd("~/Source/sleepPhaseClassification")
+
+baseUrl    <- readLines("link.txt")
+filelist_1 <- read.csv("fileList_1.csv")
+filelist_2 <- read.csv("fileList_2.csv")
+
+dataDir    <- "data/"
+
+downloadDataFiles(baseUrl, filelist_1$psg,       dataDir)
+downloadDataFiles(baseUrl, filelist_1$hypnogram, dataDir)
+downloadDataFiles(baseUrl, filelist_2$psg,       dataDir)
+downloadDataFiles(baseUrl, filelist_2$hypnogram, dataDir)
+
 psgFileName <- "SC4001E0-PSG.edf"
 hypFileName <- "SC4001EC-Hypnogram.edf"
 
