@@ -108,12 +108,18 @@ readHypnogtam <- function(fileName) {
 
 reseampleHypnogramData <- function(data, timestamps) {
   # Resampling needs numeric values
-  stage_lvls   <- levels(as.factor(data$stage))
   data$stage <- as.numeric(as.factor(data$stage))
   #Resample
   result <- approxTime(x = data, xout = timestamps, method = "constant", rule = 2)
+  for(i in 1:length(stage_lvls)) {
+     result[result==i] = stage_lvls[i]
+  }
   # Go back to factorial values of stages
-  result$stage <- as.factor(result$stage)
+  result$stage <- factor(result$stage,stage_lvls)
+
+  levels(result$stage) <- stage_lvls
+  #Make it string again
+  result$stage <- as.character(result$stage)
   result
 }
 
@@ -123,4 +129,19 @@ readAndPreprocessModelData <- function(psgFileName, hypFileName) {
   hypnogramData <- reseampleHypnogramData(hypnogramData, modelData$t)
   modelData[["stage"]] <- hypnogramData$stage
   modelData
+}
+
+
+prepareDataFromFileList <- function(fileList, dataDirectory) {
+  i = 1
+  retVal <- readAndPreprocessModelData (paste0(dataDirectory,filelist_1$psg[i]),
+                                        paste0(dataDirectory,filelist_1$hypnogram[i]))
+
+  for(i in (2:nrow(filelist_1)) ) {
+    modelData <- readAndPreprocessModelData (paste0(dataDirectory,filelist_1$psg[i]),
+                                             paste0(dataDirectory,filelist_1$hypnogram[i]))
+    retVal <- rbind(retVal, modelData)
+  }
+  retVal[["stage"]]=as.factor(retVal[["stage"]])
+  retVal;
 }

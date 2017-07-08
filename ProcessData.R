@@ -1,26 +1,35 @@
 library(graphics)
 
-source("utils.R")
-
-#TODO: remove hard-codes
-
 setwd("~/Source/sleepPhaseClassification")
 
+source("utils.R")
+
 baseUrl    <- readLines("link.txt")
-filelist_1 <- read.csv("fileList_1.csv")
-filelist_2 <- read.csv("fileList_2.csv")
+filelist_1 <- read.csv("fileList_1.csv", stringsAsFactors = FALSE)
+filelist_2 <- read.csv("fileList_2.csv", stringsAsFactors = FALSE)
+
+dir("data")
 
 dataDir    <- "data/"
 
+
+
 downloadDataFiles(baseUrl, filelist_1$psg,       dataDir)
 downloadDataFiles(baseUrl, filelist_1$hypnogram, dataDir)
-downloadDataFiles(baseUrl, filelist_2$psg,       dataDir)
-downloadDataFiles(baseUrl, filelist_2$hypnogram, dataDir)
+#downloadDataFiles(baseUrl, filelist_2$psg,       dataDir)
+#downloadDataFiles(baseUrl, filelist_2$hypnogram, dataDir)
 
-psgFileName <- "SC4001E0-PSG.edf"
-hypFileName <- "SC4001EC-Hypnogram.edf"
+modelData <- prepareDataFromFileList(filelist_1, dataDir)
 
-modelData  <- readAndPreprocessModelData(psgFileName, hypFileName)
+#psgFileName <- paste0(dataDir,filelist_1$psg[5])
+#hypFileName <- paste0(dataDir,filelist_1$hypnogram[5])
+
+#modelData   <- readAndPreprocessModelData(psgFilename, hypFilename)
+
+
+modelData <- modelData[modelData$stage != "Movement time" & modelData$stage != "Sleep stage ?",]
+
+
 
 img   <- modelData
 img$t   <- NULL
@@ -32,16 +41,20 @@ plot(x=modelData[["t"]],y=modelData[["stage"]],type="l")
 hypnogram_matrix   = data.matrix(as.numeric(modelData[["stage"]]))
 hypnogram_timeline = data.matrix(as.numeric(modelData[["t"]]))
 
-image (hypnogram_matrix,   col = rainbow(10),)
+head(modelData[["stage"]])
+
+image (hypnogram_matrix,   col = rainbow(8))
+legend(grconvertX(0.5, "device"), grconvertY(1, "device"),
+       levels(modelData$stage), fill = rainbow(8), xpd = NA)
 
 # preprocessing is finished. Now we can try build some models.
 
-dataSize=nrow(modelData)
+dataSize <- nrow(modelData)
 
 
 x <- modelData
 x$stage <-NULL
-
+unique(modelData$stage)
 
 #normalize <- function(x) { return ((x - mean(x)) / sqrt(sum(x^2)) )}
 #x.norm=apply(x,2, normalize)
@@ -74,8 +87,7 @@ ytest_pred  <- predict(svm_model, xtest_matrix)
 ylearn_pred <- predict(svm_model, xlearn_matrix)
 # compare result of prediction for learn and test data
 1-sum(ylearn_pred == ylearn)/length(ylearn_pred)
-1-sum(ytest_pred == ytest  )/length(ytest_pred)
-
+1-sum(ytest_pred  == ytest )/length(ytest_pred)
 #try random forest
 library(randomForest)
 forest <- randomForest(xlearn, ylearn, xtest, ytest, ntree = 600, keep.forest = TRUE)
