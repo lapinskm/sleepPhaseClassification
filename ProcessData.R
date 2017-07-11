@@ -51,7 +51,7 @@ y <- modelData$stage
 
 
 #Split data to learning and test sets
-testIdx  <- sample(dataSize, dataSize * 0.1)
+testIdx  <- sample(dataSize, dataSize * 0.5)
 
 xlearn <- x[-testIdx,]
 xtest  <- x[ testIdx,]
@@ -78,7 +78,7 @@ confusionMatrix(ytest_pred, ytest)
 
 #try random forest
 library(randomForest)
-forest <- randomForest(xlearn, ylearn, xtest, ytest, ntree = 600, keep.forest = TRUE)
+forest <- randomForest(xlearn, ylearn, xtest, ytest, ntree = 300, keep.forest = TRUE)
 forest
 
 #try RBF model
