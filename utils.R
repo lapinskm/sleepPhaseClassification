@@ -108,6 +108,7 @@ readHypnogtam <- function(fileName) {
 
 reseampleHypnogramData <- function(data, timestamps) {
   # Resampling needs numeric values
+  stage_lvls   <- levels(as.factor(data$stage))
   data$stage <- as.numeric(as.factor(data$stage))
   #Resample
   result <- approxTime(x = data, xout = timestamps, method = "constant", rule = 2)
