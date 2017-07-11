@@ -117,7 +117,6 @@ reseampleHypnogramData <- function(data, timestamps) {
   }
   # Go back to factorial values of stages
   result$stage <- factor(result$stage,stage_lvls)
-
   levels(result$stage) <- stage_lvls
   #Make it string again
   result$stage <- as.character(result$stage)
@@ -143,6 +142,7 @@ prepareDataFromFileList <- function(fileList, dataDirectory) {
                                              paste0(dataDirectory,filelist_1$hypnogram[i]))
     retVal <- rbind(retVal, modelData)
   }
+  retVal <- retVal[retVal$stage != "Movement time" & retVal$stage != "Sleep stage ?",]
   retVal[["stage"]]=as.factor(retVal[["stage"]])
   retVal;
 }

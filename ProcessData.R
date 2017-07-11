@@ -8,11 +8,7 @@ baseUrl    <- readLines("link.txt")
 filelist_1 <- read.csv("fileList_1.csv", stringsAsFactors = FALSE)
 filelist_2 <- read.csv("fileList_2.csv", stringsAsFactors = FALSE)
 
-dir("data")
-
 dataDir    <- "data/"
-
-
 
 downloadDataFiles(baseUrl, filelist_1$psg,       dataDir)
 downloadDataFiles(baseUrl, filelist_1$hypnogram, dataDir)
@@ -20,16 +16,6 @@ downloadDataFiles(baseUrl, filelist_1$hypnogram, dataDir)
 #downloadDataFiles(baseUrl, filelist_2$hypnogram, dataDir)
 
 modelData <- prepareDataFromFileList(filelist_1, dataDir)
-
-#psgFileName <- paste0(dataDir,filelist_1$psg[5])
-#hypFileName <- paste0(dataDir,filelist_1$hypnogram[5])
-
-#modelData   <- readAndPreprocessModelData(psgFilename, hypFilename)
-
-
-modelData <- modelData[modelData$stage != "Movement time" & modelData$stage != "Sleep stage ?",]
-
-
 
 img   <- modelData
 img$t   <- NULL
@@ -43,9 +29,9 @@ hypnogram_timeline = data.matrix(as.numeric(modelData[["t"]]))
 
 head(modelData[["stage"]])
 
-image (hypnogram_matrix,   col = rainbow(8))
+image (hypnogram_matrix,   col = rainbow(6))
 legend(grconvertX(0.5, "device"), grconvertY(1, "device"),
-       levels(modelData$stage), fill = rainbow(8), xpd = NA)
+       levels(modelData$stage), fill = rainbow(6), xpd = NA)
 
 # preprocessing is finished. Now we can try build some models.
 
