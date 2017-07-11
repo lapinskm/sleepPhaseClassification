@@ -1,4 +1,5 @@
 library(graphics)
+library(caret) #confusionMatrix
 
 setwd("~/Source/sleepPhaseClassification")
 
@@ -71,9 +72,10 @@ svm_model  <- svm(x=xlearn_matrix, y=ylearn)
 svm_model
 ytest_pred  <- predict(svm_model, xtest_matrix)
 ylearn_pred <- predict(svm_model, xlearn_matrix)
-# compare result of prediction for learn and test data
-1-sum(ylearn_pred == ylearn)/length(ylearn_pred)
-1-sum(ytest_pred  == ytest )/length(ytest_pred)
+
+confusionMatrix(ylearn_pred, ylearn)
+confusionMatrix(ytest_pred, ytest)
+
 #try random forest
 library(randomForest)
 forest <- randomForest(xlearn, ylearn, xtest, ytest, ntree = 600, keep.forest = TRUE)
@@ -101,11 +103,12 @@ rbfn.model <- RSNNS::rbf(x=xlearn_matrix,
 
 ylearn_pred <- predict(rbfn.model, xlearn_matrix)
 ylearn_pred <- apply(ylearn_pred, FUN=which.max, MARGIN = 1)
-1-sum(rep(1,length(ylearn_pred)) [ylearn_pred == ylearn])/length(ylearn_pred)
 
 ytest_pred <- predict(rbfn.model, xtest_matrix)
 ytest_pred <- apply(ytest_pred, FUN=which.max, MARGIN = 1)
-1-sum(rep(1,length(ytest_pred)) [ytest_pred == ytest])/length(ytest_pred)
+
+confusionMatrix(ylearn_pred, ylearn)
+confusionMatrix(ytest_pred, ytest)
 
 
 #try neuralnet model
@@ -138,9 +141,10 @@ neuralModel <- neuralnet(f, neuralModelData, linear.output=FALSE, hidden = c(50.
 ylearn_pred <- neuralnet::compute(neuralModel, xlearn )$net.result
 ylearn_pred <- apply(ylearn_pred, FUN=which.max, MARGIN = 1)
 ylearn      <- apply(ylearn, FUN=which.max, MARGIN = 1)
-1-sum(rep(1,length(ylearn_pred)) [ylearn_pred == ylearn])/length(ylearn_pred)
 
 ytest_pred <- neuralnet::compute(neuralModel, xtest )$net.result
 ytest_pred <- apply(ytest_pred, FUN=which.max, MARGIN = 1)
 ytest      <- apply(ytest, FUN=which.max, MARGIN = 1)
-1-sum(rep(1,length(ytest_pred)) [ytest_pred == ytest])/length(ytest_pred)
+
+confusionMatrix(ylearn_pred, ylearn)
+confusionMatrix(ytest_pred,  ytest)
