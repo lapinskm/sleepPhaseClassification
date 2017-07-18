@@ -120,6 +120,7 @@ reseampleHypnogramData <- function(data, timestamps) {
   levels(result$stage) <- stage_lvls
   #Make it string again
   result$stage <- as.character(result$stage)
+  #result$stage <- gsub(result$stage, "Sleep stage ", "")
   result
 }
 
@@ -143,6 +144,8 @@ prepareDataFromFileList <- function(fileList, dataDirectory) {
     retVal <- rbind(retVal, modelData)
   }
   retVal <- retVal[retVal$stage != "Movement time" & retVal$stage != "Sleep stage ?",]
-  retVal[["stage"]]=as.factor(retVal[["stage"]])
+
+  retVal[["stage"]]  <- as.factor(retVal[["stage"]])
+  levels(retVal$stage)=gsub(" ","_",levels(retVal$stage))
   retVal;
 }
