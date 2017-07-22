@@ -59,7 +59,31 @@ cutSpectogramIntoFreqRanges <- function(data, rangeBorders) {
   result
 }
 
-ReadSignalData <- function(fileName) {
+timestamps <- function (n, f) {
+  interval=1/f;
+   ret <- (1:n) * f
+}
+
+readSignalData <- function(fileName) {
+
+  #Load edf file
+  edfHeader <- readEdfHeader (fileName)
+  edfData   <- readEdfSignals(edfHeader)
+  #this script is memory usage optimized
+  # We are interested in EEG Fpz-Cz signal only.
+  # It should be enough to detect sleep phase.
+
+  signalValue  <-  edfData$`EEG Fpz-Cz`$signal
+  signalFreq   <-  edfData$`EEG Fpz-Cz`$sRate
+
+  timeInterval <- 1/signalFreq
+  dataSize <- length(signalValue)
+
+  timeStamps <- 0:(dataSize-1)*timeInterval
+  result <- data.frame(signalValue, timeStamps)
+}
+
+readSpectralData <- function(fileName) {
   #Load edf file
   edfHeader <- readEdfHeader (fileName)
   edfData   <- readEdfSignals(edfHeader)
@@ -125,13 +149,18 @@ reseampleHypnogramData <- function(data, timestamps) {
 }
 
 readAndPreprocessModelData <- function(psgFileName, hypFileName) {
-  modelData     <- ReadSignalData(psgFileName)
+  modelData     <- readSpectralData(psgFileName)
   hypnogramData <- readHypnogtam(hypFileName)
   hypnogramData <- reseampleHypnogramData(hypnogramData, modelData$t)
   modelData[["stage"]] <- hypnogramData$stage
   modelData
 }
 
+transformStringStagesToFactor <- function(stages) {
+  stages  <- as.factor(stages)
+  levels(stages)=gsub(" ","_",levels(stages))
+  stages
+}
 
 prepareDataFromFileList <- function(fileList, dataDirectory) {
   i = 1
@@ -145,7 +174,28 @@ prepareDataFromFileList <- function(fileList, dataDirectory) {
   }
   retVal <- retVal[retVal$stage != "Movement time" & retVal$stage != "Sleep stage ?",]
 
-  retVal[["stage"]]  <- as.factor(retVal[["stage"]])
-  levels(retVal$stage)=gsub(" ","_",levels(retVal$stage))
+  retVal$stage <-transformStringStagesToFactor(retVal$stage)
+  retVal
+}
+
+prepareTimeDomainData<- function(psgFile, hypFile) {
+  signal <- readSignalData(psgFile)
+  hypnogram <- readHypnogtam (hypFile)
+  hypnogram <- reseampleHypnogramData (hypnogram, signal$timeStamps)
+  ret <- data.frame(hypnogram$t, signal$signalValue, hypnogram$stage)
+  ret
+}
+
+prepareTimeDomainDataFromFileList <- function(fileList, dataDirectory) {
+  psgFiles <- paste0(dataDirectory, filelist$psg)
+  hypFiles <- paste0(dataDirectory, filelist$hypnogram)
+  retVal<-prepareTimeDomainData(psgFiles[1],hypFiles[1])
+  for(i in (2:nrow(filelist_1)) ) {
+    modelData <- read.csv(paste0(dataDirectory,filelist_1$psg[i]))
+    retVal <- rbind(retVal, modelData)
+  }
+
+  retVal <- retVal[retVal$stage != "Movement time" & retVal$stage != "Sleep stage ?",]
+  retVal$stage <- transformStringStagesToFactor(retVal$stage)
   retVal;
 }
