@@ -11,8 +11,8 @@ filelist_2 <- read.csv("fileList_2.csv", stringsAsFactors = FALSE)
 
 dataDir    <- "data/"
 
-downloadDataFiles(baseUrl, filelist_1$psg,       dataDir)
-downloadDataFiles(baseUrl, filelist_1$hypnogram, dataDir)
+#downloadDataFiles(baseUrl, filelist_1$psg,       dataDir)
+#downloadDataFiles(baseUrl, filelist_1$hypnogram, dataDir)
 #downloadDataFiles(baseUrl, filelist_2$psg,       dataDir)
 #downloadDataFiles(baseUrl, filelist_2$hypnogram, dataDir)
 
