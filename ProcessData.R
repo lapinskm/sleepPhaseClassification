@@ -153,3 +153,14 @@ ytest      <- apply(ytest, FUN=which.max, MARGIN = 1)
 
 confusionMatrix(ylearn_pred, ylearn)
 confusionMatrix(ytest_pred,  ytest)
+
+library(deepnet)
+filelist <- filelist_1[1:2, ]
+timeData <- prepareTimeDomainDataFromFileList(filelist)
+head(timeData$stage)
+
+signal <- data.matrix(timeData$signal)
+classInds <- class.ind(timeData$stage)
+remove(timeData)
+depnetModel <-nn.train(signal, classInds)
+object.size(depnetModel)
