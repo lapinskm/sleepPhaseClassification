@@ -162,14 +162,11 @@ transformStringStagesToFactor <- function(stages) {
   stages
 }
 
-prepareDataFromFileList <- function(fileList, dataDirectory) {
-  i = 1
-  retVal <- readAndPreprocessModelData (paste0(dataDirectory,filelist_1$psg[i]),
-                                        paste0(dataDirectory,filelist_1$hypnogram[i]))
+prepareDataFromFileList <- function(fileList) {
 
+  retVal <- readAndPreprocessModelData (filelist_1$psg[1],filelist_1$hypnogram[1])
   for(i in (2:nrow(filelist_1)) ) {
-    modelData <- readAndPreprocessModelData (paste0(dataDirectory,filelist_1$psg[i]),
-                                             paste0(dataDirectory,filelist_1$hypnogram[i]))
+    modelData <- readAndPreprocessModelData (filelist_1$psg[i], filelist_1$hypnogram[i])
     retVal <- rbind(retVal, modelData)
   }
   retVal <- retVal[retVal$stage != "Movement time" & retVal$stage != "Sleep stage ?",]
@@ -186,12 +183,11 @@ prepareTimeDomainData<- function(psgFile, hypFile) {
   ret
 }
 
-prepareTimeDomainDataFromFileList <- function(fileList, dataDirectory) {
-  psgFiles <- paste0(dataDirectory, filelist$psg)
-  hypFiles <- paste0(dataDirectory, filelist$hypnogram)
-  retVal<-prepareTimeDomainData(psgFiles[1],hypFiles[1])
+prepareTimeDomainDataFromFileList <- function(fileList) {
+
+  retVal <- prepareTimeDomainData(filelist$psg[1], filelist$hypnogram[1])
   for(i in (2:nrow(filelist_1)) ) {
-    modelData <- read.csv(paste0(dataDirectory,filelist_1$psg[i]))
+    retVal <- prepareTimeDomainData(filelist$psg[i], filelist$hypnogram[i])
     retVal <- rbind(retVal, modelData)
   }
 

@@ -5,18 +5,23 @@ setwd("~/Source/sleepPhaseClassification")
 
 source("utils.R")
 
-baseUrl    <- readLines("link.txt")
-filelist_1 <- read.csv("fileList_1.csv", stringsAsFactors = FALSE)
-filelist_2 <- read.csv("fileList_2.csv", stringsAsFactors = FALSE)
-
 dataDir    <- "data/"
+
+baseUrl    <- readLines("link.txt")
+filelist_1           <- read.csv("fileList_1.csv", stringsAsFactors = FALSE)
+filelist_1$psg       <- paste0(dataDir, filelist_1$psg)
+filelist_1$hypnogram <- paste0(dataDir, filelist_1$hypnogram)
+
+filelist_2            <- read.csv("fileList_2.csv", stringsAsFactors = FALSE)
+filelist_2$psg        <- paste0(dataDir, filelist_2$psg)
+filelist_2$hypnogram  <- paste0(dataDir, filelist_2$hypnogram)
 
 #downloadDataFiles(baseUrl, filelist_1$psg,       dataDir)
 #downloadDataFiles(baseUrl, filelist_1$hypnogram, dataDir)
 #downloadDataFiles(baseUrl, filelist_2$psg,       dataDir)
 #downloadDataFiles(baseUrl, filelist_2$hypnogram, dataDir)
 
-modelData <- prepareDataFromFileList(filelist_1, dataDir)
+modelData <- prepareDataFromFileList(filelist_1)
 
 img   <- modelData
 img$t   <- NULL
