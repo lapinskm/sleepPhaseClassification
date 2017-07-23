@@ -184,12 +184,12 @@ prepareTimeDomainData<- function(psgFile, hypFile) {
 }
 
 prepareTimeDomainDataFromFileList <- function(fileList) {
-
   retVal <- prepareTimeDomainData(filelist$psg[1], filelist$hypnogram[1])
-  for(i in (2:nrow(filelist_1)) ) {
-    retVal <- prepareTimeDomainData(filelist$psg[i], filelist$hypnogram[i])
+  for(i in (2:nrow(filelist)) ) {
+    modelData <- prepareTimeDomainData(filelist$psg[i], filelist$hypnogram[i])
     retVal <- rbind(retVal, modelData)
   }
+  colnames(retVal) <- c("t","signal","stage")
 
   retVal <- retVal[retVal$stage != "Movement time" & retVal$stage != "Sleep stage ?",]
   retVal$stage <- transformStringStagesToFactor(retVal$stage)
